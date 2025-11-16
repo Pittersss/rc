@@ -229,26 +229,117 @@ def plot_signal(audio_signal, title, num_bits):
     plt.tight_layout()
     plt.show()
 
+def plot_two_signals(audio_signal1, audio_signal2, title1, title2, num_bits):
+    time_axis1 = np.linspace(0, len(audio_signal1)/SAMPLE_RATE, len(audio_signal1))
+    time_axis2 = np.linspace(0, len(audio_signal2)/SAMPLE_RATE, len(audio_signal2))
+
+    fig, axs = plt.subplots(2, 1, figsize=(12, 7), sharex=True)
+
+    # --- Primeiro sinal (acima) ---
+    axs[0].plot(time_axis1, audio_signal1)
+    axs[0].set_title(title1)
+    axs[0].set_ylabel("Amplitude")
+    axs[0].grid(True, alpha=0.3)
+
+    for i in range(1, num_bits):
+        axs[0].axvline(x=i * BIT_DURATION, color='red', linestyle='--', alpha=0.5)
+
+    # --- Segundo sinal (abaixo) ---
+    axs[1].plot(time_axis2, audio_signal2)
+    axs[1].set_title(title2)
+    axs[1].set_xlabel("Tempo (s)")
+    axs[1].set_ylabel("Amplitude")
+    axs[1].grid(True, alpha=0.3)
+
+    for i in range(1, num_bits):
+        axs[1].axvline(x=i * BIT_DURATION, color='red', linestyle='--', alpha=0.5)
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_two_signals_raw(audio_signal1, audio_signal2, title1, title2):
+    fig, axs = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+
+    # Sinal 1
+    axs[0].plot(audio_signal1, color="black")
+    axs[0].set_title(title1)
+    axs[0].set_ylabel("Amplitude")
+
+    # Sinal 2
+    axs[1].plot(audio_signal2, color="black")
+    axs[1].set_title(title2)
+    axs[1].set_xlabel("Amostra")
+    axs[1].set_ylabel("Amplitude")
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_multiple_signals(signals, num_bits, titles=None):
+    """
+    signals: lista de arrays de áudio
+    num_bits: quantidade de bits (para marcar divisões)
+    titles: lista opcional de títulos
+    """
+
+    num_signals = len(signals)
+
+    fig, axs = plt.subplots(num_signals, 1, figsize=(12, 3.5 * num_signals), sharex=True)
+
+    if num_signals == 1:
+        axs = [axs]
+
+    for i, signal in enumerate(signals):
+
+        # eixo de tempo baseado no sample rate
+        time_axis = np.linspace(0, len(signal) / SAMPLE_RATE, len(signal))
+
+        axs[i].plot(time_axis, signal, color="black")
+
+        # Título do subplot
+        if titles and i < len(titles):
+            axs[i].set_title(titles[i])
+        else:
+            axs[i].set_title(f"Sinal {i+1}")
+
+        axs[i].set_ylabel("Amplitude")
+        axs[i].grid(True, alpha=0.3)
+
+        # Linhas vermelhas marcando os bits
+        for b in range(1, num_bits):
+            axs[i].axvline(x=b * BIT_DURATION, color='red', linestyle='--', alpha=0.5)
+
+    axs[-1].set_xlabel("Tempo (s)")
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
 BITS_LENGTH = 22
 FILENAME = '../dados_codificados/dados_123110479_44100hz.wav'
 nrz_audio, _ = sf.read(FILENAME)
 decoded_nrz = decode_nrz(nrz_audio, BITS_LENGTH)
 
-snr = -1
-clean_signal = nrz_audio
-original_msg = decoded_nrz
+snrs = [-28, -29, -30, -31, -32,-33,-34] # niveis de ruidos
+for snr in snrs:
+    N = 100 # quantidade de testes
+    cnt = 0
+    for t in range(N):
+        clean_signal = nrz_audio
+        original_msg = decoded_nrz
 
-print("ESCUTANDO...")
-sd.play(nrz_audio, SAMPLE_RATE)
-sd.wait()
+        noisy_signal = adicionar_ruido(clean_signal, snr)
+        decoded = decode_nrz(noisy_signal, len(original_msg))
 
+        if(original_msg != decoded):
+            # print(f"  Teste: {t}")
+            # print(f"  {"Original:":25} {original_msg}")
+            # print(f"  {f'Com ruido de {snr} db:':25} {decoded}")
+            cnt+=1
+    print(f'snr = {snr}db, de {N} testes, {cnt} falharam tendo proporção de {cnt/N:.2f}')
 
-noisy_signal = adicionar_ruido(clean_signal, snr)
-decoded = decode_nrz(noisy_signal, len(original_msg))
-
-print(f"  Original: {original_msg}")
-print(f"  Decodificado: {decoded}")
-print(f"  Correto: {original_msg == decoded}\n")
-
-plot_signal(clean_signal, 'clean', BITS_LENGTH)
-plot_signal(noisy_signal, 'ruido', BITS_LENGTH)
+plot_multiple_signals([adicionar_ruido(clean_signal, snr) for snr in [0] + snrs], BITS_LENGTH, [f'noisy with {snr}db' for snr in [0] +snrs])
+# plot_signal(clean_signal, 'clean', BITS_LENGTH)
+# plot_signal(noisy_signal, 'ruido', BITS_LENGTH)
