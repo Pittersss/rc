@@ -1,11 +1,28 @@
 import soundfile as sf
 import numpy as np
+import matplotlib.pyplot as plt
 
 SAMPLE_RATE = 44100  # Hz
 BIT_DURATION = 1.0   # 1 segundo por bit
 FREQ_LOW = 440       # Frequência para '0' (Lá)
 FREQ_HIGH = 880      # Frequência para '1' (Lá oitava)
 DURATION = 0
+
+def plot_signal(audio_signal, title, num_bits):
+    time_axis = np.linspace(0, len(audio_signal)/SAMPLE_RATE, len(audio_signal))
+
+    plt.figure(figsize=(12, 4))
+    plt.plot(time_axis, audio_signal)
+    plt.title(title)
+    plt.xlabel('Tempo (s)')
+    plt.ylabel('Amplitude')
+    plt.grid(True, alpha=0.3)
+
+    for i in range(1, num_bits): #divisões dos bits
+        plt.axvline(x=i*BIT_DURATION, color='red', linestyle='--', alpha=0.5)
+
+    plt.tight_layout()
+    plt.show()
 
 def show(data:str,debug):
     if debug==True:
@@ -140,13 +157,14 @@ if __name__ == '__main__':
     print("\n1. Decodificando NRZ:")
     nrz_audio, _ = sf.read(path)
     decoded_nrz = decode_nrz(nrz_audio, DURATION)
-    
+        
     print(f"Decodificado: {decoded_nrz}")
     print(f"Número de bits é: {len(decoded_nrz)}")
-    
+    plot_signal(nrz_audio,'NRZ',DURATION)
+
     print("\n3. Decodificando Manchester:")
     manchester_audio, _ = sf.read(path)
     decoded_manchester = decode_manchester(manchester_audio, DURATION)
     print(f"Decodificado: {decoded_manchester}")
     print(f"Número de bits é: {len(decoded_manchester)}")
-
+    plot_signal(manchester_audio,'Manchester',DURATION)
