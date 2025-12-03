@@ -22,6 +22,7 @@ input_device = 1
 sd.default.device = (input_device, output_device)
 
 
+
 def plot_grafico(x, y):
     plt.figure()              
     plt.plot(x, y)            
@@ -108,15 +109,15 @@ def plot_multiple_signals_frequency(signals, num_bits, titles=None):
     plt.show()
    
 
-MATRICULA = '123110479'
+MATRICULA = '123110177'
 FILENAME = root / 'dados_codificados' / f'dados_{MATRICULA}_44100hz.wav'
-BITS_LENGTH = 22
+BITS_LENGTH = 18
 audio, _ = sf.read(FILENAME)
 decoded_nrz = decode_nrz(audio, BITS_LENGTH)
 
-RUIDO = -2
-noisy_signal_example = adicionar_ruido(audio, RUIDO)
-noisy_msg_example = decode_nrz(noisy_signal_example, BITS_LENGTH)
+# RUIDO = -2
+# noisy_signal_example = adicionar_ruido(audio, RUIDO)
+# noisy_msg_example = decode_nrz(noisy_signal_example, BITS_LENGTH)
 
 # grafico amplitude x tempo
 # plot_multiple_signals([audio, noisy_signal_example], BITS_LENGTH, ['sinal limpo', F'sinal com ruido de {RUIDO}'])
@@ -135,6 +136,10 @@ noisy_msg_example = decode_nrz(noisy_signal_example, BITS_LENGTH)
 snrs = list(range(0, -100, -1)) # niveis de ruidos
 x = []
 y = []
+
+primeiro_X_erro = None
+primeiro_X_todos = None
+
 for snr in snrs:
     N = 10 # quantidade de testes
     cnt = 0
@@ -158,6 +163,20 @@ for snr in snrs:
     print(f'snr = {snr}db, de {N} testes, {cnt} falharam tendo proporção de {cnt/N:.2f}, e media de {errors_bit:.1f} bits errados')
     x.append(-snr)
     y.append(errors_bit)
+
+    X = -snr   
+    if primeiro_X_erro is None and errors_bit > 0:
+        primeiro_X_erro = X
+
+    
+    if primeiro_X_todos is None and errors_bit >= 0.99 * BITS_LENGTH:
+        primeiro_X_todos = X
+
+
+print("\n========== RESULTADOS A3.1 ==========")
+
+print(f"(a) Primeiros erros em X = {primeiro_X_erro}  dB")
+print(f"(b) Todos os bits errados a partir de X = {primeiro_X_todos} dB")
 
 plot_grafico(x,y)
 
