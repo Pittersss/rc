@@ -1,0 +1,72 @@
+[
+    {
+        "tamanho": 1500,
+        "tempo_manual": 1.0353675830010616,
+        "mem_pico_manual": 105.7509765625,
+        "tempo_lib": 0.3620580089991563,
+        "mem_pico_lib": 1.46875
+    },
+    {
+        "tamanho": 3000,
+        "tempo_manual": 2.1477182469971012,
+        "mem_pico_manual": 211.2431640625,
+        "tempo_lib": 0.7282995509995089,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 4500,
+        "tempo_manual": 3.1501371760023176,
+        "mem_pico_manual": 316.7119140625,
+        "tempo_lib": 1.074397645999852,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 6000,
+        "tempo_manual": 4.200391148002382,
+        "mem_pico_manual": 422.1806640625,
+        "tempo_lib": 1.4308576329967764,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 7500,
+        "tempo_manual": 5.232139138002822,
+        "mem_pico_manual": 527.6494140625,
+        "tempo_lib": 1.791425966002862,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 9000,
+        "tempo_manual": 6.38168229400253,
+        "mem_pico_manual": 633.1181640625,
+        "tempo_lib": 2.1431724350004515,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 10500,
+        "tempo_manual": 7.291989080000349,
+        "mem_pico_manual": 738.5869140625,
+        "tempo_lib": 2.488021460998425,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 12000,
+        "tempo_manual": 8.385831932999281,
+        "mem_pico_manual": 844.0556640625,
+        "tempo_lib": 2.873387923998962,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 13500,
+        "tempo_manual": 9.57971223399727,
+        "mem_pico_manual": 949.5244140625,
+        "tempo_lib": 3.2670976300032635,
+        "mem_pico_lib": 1.2421875
+    },
+    {
+        "tamanho": 15000,
+        "tempo_manual": 10.72720446999665,
+        "mem_pico_manual": 1054.9931640625,
+        "tempo_lib": 3.6353538049988856,
+        "mem_pico_lib": 1.2421875
+    }
+]
