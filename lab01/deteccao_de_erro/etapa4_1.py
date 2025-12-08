@@ -9,8 +9,6 @@ sys.path.append(str(root))
 from crc_manual import calcular_crc_manual
 from crc import Crc16, Calculator, Configuration
 
-
-
 POLYNOMIOS = {
     "MODBUS":       "11000000000000101",  # x^16 + x^15 + x^2 + 1
     "ARC":          "10001000000100001",  # x^16 + x^12 + x^5 + 1
@@ -22,10 +20,6 @@ def string_to_bits(s):
     return ''.join(f"{ord(c):08b}" for c in s)
 
 def calcular_crc(bits, matricula):
-
-    print("========== MSG =========")
-    print(bits)
-    print("========== MSG =========")
 
     resultado = None
     if matricula[-1] in ["0","1","2","3","4","5"]:
@@ -112,16 +106,17 @@ def print_resultados(resultados):
 
 
     
-MENSAGEM_BASE = "Lenner Coutinho Pereira"
-MENSAGEM_BASE = MENSAGEM_BASE.replace(" ", "")
+MENSAGEM_BASE = "Beatriz de Souza Meneses"
 
+print("MENSAGEM_BASE_USADA ", MENSAGEM_BASE)
 MENSAGEM_BASE = string_to_bits(MENSAGEM_BASE)
+print("MENSAGEM ", MENSAGEM_BASE)
 
-matricula = "123110175"
+matricula = "123110177"
+print("MATRICULA ", matricula)
 resultado = calcular_crc(MENSAGEM_BASE, matricula)
 testes = erro(MENSAGEM_BASE)
-
 print('crc', resultado)
 
-print_resultados(testes)
 
+print_resultados(testes)
