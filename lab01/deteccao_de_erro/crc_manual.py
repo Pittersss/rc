@@ -48,13 +48,13 @@ def calcular_crc_manual(dados_bits: str, gerador_bits: str) -> str:
     resto = "".join(mensagem_aumentada[-r:])
     return resto
 
+if(__name__ == '__main__'):
+    # Exemplo de uso para validação
+    dados_teste = "1101011111"  # M(x)
+    gerador_teste = "10011"    # G(x)
+    crc_calculado = calcular_crc_manual(dados_teste, gerador_teste)
 
-# Exemplo de uso para validação
-dados_teste = "1101011111"  # M(x)
-gerador_teste = "10011"    # G(x)
-crc_calculado = calcular_crc_manual(dados_teste, gerador_teste)
-
-print(f"Dados M(x): {dados_teste}")
-print(f"Gerador G(x): {gerador_teste}")
-print(f"CRC Calculado: {crc_calculado}")
-# Quadro T(x) a ser transmitido: dados_teste + crc_calculado
+    print(f"Dados M(x): {dados_teste}")
+    print(f"Gerador G(x): {gerador_teste}")
+    print(f"CRC Calculado: {crc_calculado}")
+    # Quadro T(x) a ser transmitido: dados_teste + crc_calculado
