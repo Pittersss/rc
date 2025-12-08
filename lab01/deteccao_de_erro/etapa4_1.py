@@ -1,6 +1,16 @@
 import random
-from .crc import calcular_crc_manual
-from crc import Crc16, Calculator
+
+import sys
+from pathlib import Path
+
+root = Path(__file__).resolve().parents[0]
+sys.path.append(str(root))
+
+print(str(root))
+
+from crc_manual import calcular_crc_manual
+from crc import Crc16, Calculator, Configuration
+
 
 
 POLYNOMIOS = {
@@ -13,8 +23,7 @@ POLYNOMIOS = {
 def string_to_bits(s):
     return ''.join(f"{ord(c):08b}" for c in s)
 
-def calcular_crc(MENSAGEM_BASE, matricula):
-    bits = string_to_bits(MENSAGEM_BASE)
+def calcular_crc(bits, matricula):
 
     print("========== MSG =========")
     print(bits)
@@ -44,7 +53,7 @@ def xor_bits(quadro, erro):
 
 def bits_to_bytes(bits):
     if len(bits) % 8 != 0:
-        bits = bits.zfill(len(bits) + (8 - len(bits) % 8))
+        bits = bits.ljust(len(bits) + (8 - len(bits) % 8), '0')
 
     byte_list = []
     for i in range(0, len(bits), 8):
@@ -55,28 +64,43 @@ def bits_to_bytes(bits):
 def erro(MENSAGEM_BASE):
     resultados = []
 
-    calculator_lib = Calculator(Crc16.MODBUS)
-        
+    conf_manual = Configuration(
+        width=16,
+        polynomial=0x8005, # Polinomio MODBUS/CCITT
+        init_value=0x0000, # Manual geralmente começa com 0
+        final_xor_value=0x0000,
+        reverse_input=False, # Manual geralmente não inverte bits
+        reverse_output=False
+    )
+    calculator_lib = Calculator(conf_manual)
+
     crc_base = calcular_crc_manual(MENSAGEM_BASE, POLYNOMIOS["MODBUS"])
     quadro = MENSAGEM_BASE + crc_base
 
-    for _ in range(10):
+    for _ in range(1000):
        
-        n = random.randint(1, len(quadro))  
+        n = random.randint(50, len(quadro))  
         pos = random.randint(0, len(quadro) - n)
         erro = gerar_erro(len(quadro), n, pos)
         quadro_corrompido = xor_bits(quadro, erro) 
-
+    
         crc_m = calcular_crc_manual(quadro_corrompido, POLYNOMIOS["MODBUS"])
 
         quadro_bytes = bits_to_bytes(quadro_corrompido)
 
-        crc_lib = format(calculator_lib.checksum(quadro_bytes), '016b')
+        # crc_lib = format(calculator_lib.checksum(quadro_bytes), '016b')
+        mensagem_bytes = bits_to_bytes(quadro_corrompido[:-16])
+        crc_recebido = quadro_corrompido[-16:]
+
+        crc_lib = format(calculator_lib.checksum(mensagem_bytes), '016b')
+        detectado_l = crc_lib != crc_recebido
 
         detectado_m = crc_m != "0"*16
-        detectado_l = crc_lib != "0"*16
+        # detectado_l = crc_lib != "0"*16
 
-        resultados.append((erro, pos, n, detectado_m, detectado_l))
+        tem_erro = n != 0
+        if(detectado_m != tem_erro or detectado_l != tem_erro):
+            resultados.append((erro, pos, n, detectado_m, detectado_l))
     
     return resultados
 
@@ -89,19 +113,19 @@ def print_resultados(resultados):
         print(f"    TAMANHO_ERRO = {tamanho_erro} ")
         print(f"    DETECTADO PELO CRC MANUAL? = {detectado_m}")
         print(f"    DETECTADO PELO CRC LIB? = {detectado_l}")
-        i+=1
 
 
     
-MENSAGEM_BASE = "Beatriz"
+MENSAGEM_BASE = "Lenner Coutinho Pereira"
 MENSAGEM_BASE = MENSAGEM_BASE.replace(" ", "")
 
-matricula = "123110177"
+MENSAGEM_BASE = string_to_bits(MENSAGEM_BASE)
+
+matricula = "123110175"
 resultado = calcular_crc(MENSAGEM_BASE, matricula)
 testes = erro(MENSAGEM_BASE)
 
-print(resultado)
+print('crc', resultado)
 
 print_resultados(testes)
-
 
