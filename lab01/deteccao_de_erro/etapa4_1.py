@@ -6,8 +6,6 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[0]
 sys.path.append(str(root))
 
-print(str(root))
-
 from crc_manual import calcular_crc_manual
 from crc import Crc16, Calculator, Configuration
 
@@ -77,7 +75,7 @@ def erro(MENSAGEM_BASE):
     crc_base = calcular_crc_manual(MENSAGEM_BASE, POLYNOMIOS["MODBUS"])
     quadro = MENSAGEM_BASE + crc_base
 
-    for _ in range(1000):
+    for _ in range(100):
        
         n = random.randint(50, len(quadro))  
         pos = random.randint(0, len(quadro) - n)
@@ -88,7 +86,6 @@ def erro(MENSAGEM_BASE):
 
         quadro_bytes = bits_to_bytes(quadro_corrompido)
 
-        # crc_lib = format(calculator_lib.checksum(quadro_bytes), '016b')
         mensagem_bytes = bits_to_bytes(quadro_corrompido[:-16])
         crc_recebido = quadro_corrompido[-16:]
 
@@ -96,7 +93,6 @@ def erro(MENSAGEM_BASE):
         detectado_l = crc_lib != crc_recebido
 
         detectado_m = crc_m != "0"*16
-        # detectado_l = crc_lib != "0"*16
 
         tem_erro = n != 0
         if(detectado_m != tem_erro or detectado_l != tem_erro):
