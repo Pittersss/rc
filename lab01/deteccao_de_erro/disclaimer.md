@@ -5,3 +5,4 @@ Foi utilizado inteligência artificial para:
     - Uso errado da biblioteca CRC, requerendo configurações adicionais
     - Erro de passagem de parâmetro, passando um texto em ascii sendo que era para ser uma string binária
     - Na funcionalidade de preeencher os bits para formar um byte estavamos fazendo de maneira errada, impactando no cálculo do crc
+- Gerar o código para o plot dos gráficos através do matplotlib na etapa 3
