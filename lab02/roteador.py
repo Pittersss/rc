@@ -130,28 +130,34 @@ def receive_update():
     if not sender_address or not isinstance(sender_table, dict):
         return jsonify({"error": "Missing sender_address or routing_table"}), 400
 
+    if sender_address not in router_instance.neighbors:
+        return jsonify({"error": "Sender adress is not in my neighbor list"}), 400
+
     print(f"Recebida atualização de {sender_address}:")
     print(json.dumps(sender_table, indent=4))
 
-    # TODO: Implemente a lógica de Bellman-Ford aqui.
-    #
-    # 1. Verifique se o remetente é um vizinho conhecido.
-    # 2. Obtenha o custo do link direto para este vizinho a partir de `router_instance.neighbors`.
-    # 3. Itere sobre cada rota (`network`, `info`) na `sender_table` recebida.
-    # 4. Calcule o novo custo para chegar à `network`:
-    #    novo_custo = custo_do_link_direto + info['cost']
-    # 5. Verifique sua própria tabela de roteamento:
-    #    a. Se você não conhece a `network`, adicione-a à sua tabela com o
-    #       `novo_custo` e o `next_hop` sendo o `sender_address`.
-    #    b. Se você já conhece a `network`, verifique se o `novo_custo` é menor
-    #       que o custo que você já tem. Se for, atualize sua tabela com o
-    #       novo custo e o novo `next_hop`.
-    #    c. (Opcional, mas importante para robustez): Se o `next_hop` para uma rota
-    #       for o `sender_address`, você deve sempre atualizar o custo, mesmo que
-    #       seja maior (isso ajuda a propagar notícias de links quebrados).
-    #
-    # 6. Mantenha um registro se sua tabela mudou ou não. Se mudou, talvez seja
-    #    uma boa ideia imprimir a nova tabela no console.
+    cost_sender = router_instance.neighbors[sender_address]
+
+    table_changed = False
+
+    for network, info in sender_table.items():
+        new_cost = cost_sender + info['cost']
+        if network not in router_instance.routing_table:
+            router_instance.routing_table[network] = {'cost': new_cost, 'next_hop': sender_address}
+            table_changed = True
+        else:
+            current_route = router_instance.routing_table[network]
+            if current_route['next_hop'] == sender_address and current_route['cost'] != new_cost:
+                router_instance.routing_table[network]['cost'] = new_cost
+                table_changed = True
+
+            elif current_route['cost'] > new_cost:
+                router_instance.routing_table[network] = {'cost': new_cost, 'next_hop': sender_address}
+                table_changed = True
+
+    if table_changed:
+        print(f'Tabela de roteamento do roteador com endereço {router_instance.my_address} mudou!')
+        print(router_instance.routing_table)
 
     return jsonify({"status": "success", "message": "Update received"}), 200
 
