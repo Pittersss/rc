@@ -30,21 +30,20 @@ class Router:
         self.my_network = my_network
         self.update_interval = update_interval
 
-        # TODO: Este é o local para criar e inicializar sua tabela de roteamento.
-        #
-        # 1. Crie a estrutura de dados para a tabela de roteamento. Um dicionário é
-        #    uma ótima escolha, onde as chaves são as redes de destino (ex: '10.0.1.0/24')
-        #    e os valores são outro dicionário contendo 'cost' e 'next_hop'.
-        #    Ex: {'10.0.1.0/24': {'cost': 0, 'next_hop': '10.0.1.0/24'}}
-        #
-        # 2. Adicione a rota para a rede que este roteador administra diretamente
-        #    (a rede em 'self.my_network'). O custo para uma rede diretamente
-        #    conectada é 0, e o 'next_hop' pode ser a própria rede ou o endereço do roteador.
-        #
-        # 3. Adicione as rotas para seus vizinhos diretos, usando o dicionário
-        #    'self.neighbors'. Para cada vizinho, o 'cost' é o custo do link direto
-        #    e o 'next_hop' é o endereço do próprio vizinho.
         self.routing_table = {}
+
+        #Rota para rede que este roteador administra
+        self.routing_table[self.my_network] = {
+            'cost': 0, 
+            'next_hop': str(self.my_network)
+        }
+
+        #Rotas para os vizinhos
+        for neighbor_adress, cost in self.neighbors.items():
+            self.routing_table[neighbor_adress] = {
+            'cost': cost, 
+            'next_hop': str(neighbor_adress)
+        }
 
         print("Tabela de roteamento inicial:")
         print(json.dumps(self.routing_table, indent=4))
