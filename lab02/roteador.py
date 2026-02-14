@@ -131,8 +131,31 @@ def receive_update():
     if not sender_address or not isinstance(sender_table, dict):
         return jsonify({"error": "Missing sender_address or routing_table"}), 400
 
+    if sender_address not in router_instance.neighbors:
+        return jsonify({"error": "Sender adress is not in my neighbor list"}), 400
+
     print(f"Recebida atualização de {sender_address}:")
     print(json.dumps(sender_table, indent=4))
+
+    cost_sender = router_instance.neighbors[sender_address]
+
+    table_changed = False
+
+    for network, info in sender_table.items():
+        new_cost = cost_sender + info['cost']
+        if network not in router_instance.routing_table:
+            router_instance.routing_table[network] = {'cost': new_cost, 'next_hop': sender_address}
+            table_changed = True
+        else:
+            current_route = router_instance.routing_table[network]
+            if (current_route['next_hop'] == sender_address and current_route['cost'] != new_cost) or current_route['cost'] > new_cost:
+                router_instance.routing_table[network] = {'cost': new_cost, 'next_hop': sender_address}
+                table_changed = True
+
+    if table_changed:
+        print(f'Tabela de roteamento do roteador com endereço {router_instance.my_address} mudou!')
+        print(router_instance.routing_table)
+
 
     # TODO: Implemente a lógica de Bellman-Ford aqui.
     #
