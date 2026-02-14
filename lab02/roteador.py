@@ -159,27 +159,6 @@ def receive_update():
         print(f'Tabela de roteamento do roteador com endereço {router_instance.my_address} mudou!')
         print(router_instance.routing_table)
 
-
-    # TODO: Implemente a lógica de Bellman-Ford aqui.
-    #
-    # 1. Verifique se o remetente é um vizinho conhecido.
-    # 2. Obtenha o custo do link direto para este vizinho a partir de `router_instance.neighbors`.
-    # 3. Itere sobre cada rota (`network`, `info`) na `sender_table` recebida.
-    # 4. Calcule o novo custo para chegar à `network`:
-    #    novo_custo = custo_do_link_direto + info['cost']
-    # 5. Verifique sua própria tabela de roteamento:
-    #    a. Se você não conhece a `network`, adicione-a à sua tabela com o
-    #       `novo_custo` e o `next_hop` sendo o `sender_address`.
-    #    b. Se você já conhece a `network`, verifique se o `novo_custo` é menor
-    #       que o custo que você já tem. Se for, atualize sua tabela com o
-    #       novo custo e o novo `next_hop`.
-    #    c. (Opcional, mas importante para robustez): Se o `next_hop` para uma rota
-    #       for o `sender_address`, você deve sempre atualizar o custo, mesmo que
-    #       seja maior (isso ajuda a propagar notícias de links quebrados).
-    #
-    # 6. Mantenha um registro se sua tabela mudou ou não. Se mudou, talvez seja
-    #    uma boa ideia imprimir a nova tabela no console.
-
     return jsonify({"status": "success", "message": "Update received"}), 200
 
 if __name__ == '__main__':
