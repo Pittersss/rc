@@ -148,7 +148,11 @@ def receive_update():
             table_changed = True
         else:
             current_route = router_instance.routing_table[network]
-            if (current_route['next_hop'] == sender_address and current_route['cost'] != new_cost) or current_route['cost'] > new_cost:
+            if current_route['next_hop'] == sender_address and current_route['cost'] != new_cost:
+                router_instance.routing_table[network]['cost'] = new_cost
+                table_changed = True
+
+            elif current_route['cost'] > new_cost:
                 router_instance.routing_table[network] = {'cost': new_cost, 'next_hop': sender_address}
                 table_changed = True
 
