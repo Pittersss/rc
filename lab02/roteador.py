@@ -4,6 +4,7 @@ import csv
 import json
 import threading
 import time
+import copy
 from argparse import ArgumentParser
 
 import requests
@@ -39,12 +40,10 @@ class Router:
         }
 
         #Rotas para os vizinhos
-        for neighbor_adress, cost in self.neighbors.items():
-            self.routing_table[neighbor_adress] = {
-            'cost': cost, 
-            'next_hop': str(neighbor_adress)
-        }
-
+        self.routing_table[self.my_network] = {
+        'cost': 0,
+        'next_hop': self.my_network
+}
         print("Tabela de roteamento inicial:")
         print(json.dumps(self.routing_table, indent=4))
 
@@ -79,13 +78,57 @@ class Router:
         # 1. CRIE UMA CÓPIA da `self.routing_table` NÃO ALTERE ESTA VALOR.
         # 2. IMPLEMENTE A LÓGICA DE SUMARIZAÇÃO nesta cópia.
         # 3. ENVIE A CÓPIA SUMARIZADA no payload, em vez da tabela original.
-        
-        tabela_para_enviar = self.routing_table # ATENÇÃO: Substitua pela cópia sumarizada.
 
+            
+        tabela_para_enviar = copy.deepcopy(self.routing_table)
+
+        mudou = True
+        while mudou:
+            mudou = False
+            destinos = list(tabela_para_enviar.keys())
+
+            for i in range(len(destinos)):
+                for j in range(i + 1, len(destinos)):
+                    d1 = destinos[i]
+                    d2 = destinos[j]
+
+                    if d1 not in tabela_para_enviar or d2 not in tabela_para_enviar:
+                        continue
+
+                    r1 = tabela_para_enviar[d1]
+                    r2 = tabela_para_enviar[d2]
+
+                    # Condição principal: mesmo next_hop
+                    if r1["next_hop"] != r2["next_hop"]: continue
+                                        
+                    if can_aggregate(d1, d2):
+                        agregada = aggregate(d1, d2)
+                        novo_custo = max(r1["cost"], r2["cost"])
+
+                        # Remove específicas
+                        del tabela_para_enviar[d1]
+                        del tabela_para_enviar[d2]
+
+                        # Adiciona sumarizada
+                        tabela_para_enviar[agregada] = {
+                            "cost": novo_custo,
+                            "next_hop": r1["next_hop"]
+                        }
+
+                        mudou = True
+                        break
+                if mudou:
+                    break
+
+                        
         payload = {
             "sender_address": self.my_address,
             "routing_table": tabela_para_enviar
         }
+
+        print("Minha tabela de roteamento\n")
+        print(tabela_para_enviar)
+        print("\n")
 
         for neighbor_address in self.neighbors:
             url = f'http://{neighbor_address}/receive_update'
@@ -94,6 +137,60 @@ class Router:
                 requests.post(url, json=payload, timeout=5)
             except requests.exceptions.RequestException as e:
                 print(f"Não foi possível conectar ao vizinho {neighbor_address}. Erro: {e}")
+
+
+
+def ip_to_int(ip):
+    parts = ip.split(".")
+    return (int(parts[0]) << 24) | \
+           (int(parts[1]) << 16) | \
+           (int(parts[2]) << 8)  | \
+           int(parts[3])
+
+def int_to_ip(num):
+    return ".".join([
+        str((num >> 24) & 255),
+        str((num >> 16) & 255),
+        str((num >> 8) & 255),
+        str(num & 255)
+    ])
+
+def can_aggregate(net1, net2):
+    ip1, prefix1 = net1.split("/")
+    ip2, prefix2 = net2.split("/")
+
+    prefix1 = int(prefix1)
+    prefix2 = int(prefix2)
+
+    if prefix1 != prefix2: return False
+
+    size = 2 ** (32 - prefix1)
+
+    int1 = ip_to_int(ip1)
+    int2 = ip_to_int(ip2)
+
+    if abs(int1 - int2) != size: return False
+
+    lower = min(int1, int2)
+    super_prefix = prefix1 - 1
+    super_size = 2 ** (32 - super_prefix)
+
+    return (lower % super_size) == 0
+
+def aggregate(net1, net2):
+    ip1, prefix = net1.split("/")
+    prefix = int(prefix)
+
+    int1 = ip_to_int(ip1)
+
+    super_prefix = prefix - 1
+    super_size = 2 ** (32 - super_prefix)
+
+    super_network_int = (int1 // super_size) * super_size
+
+    super_ip = int_to_ip(super_network_int)
+
+    return f"{super_ip}/{super_prefix}"
 
 # --- API Endpoints ---
 # Instância do Flask e do Roteador (serão inicializadas no main)
@@ -116,6 +213,7 @@ def get_routes():
             "routing_table": router_instance.routing_table # Exibe a tabela de roteamento atual (a ser implementada)
         })
     return jsonify({"error": "Roteador não inicializado"}), 500
+
 
 @app.route('/receive_update', methods=['POST'])
 def receive_update():
