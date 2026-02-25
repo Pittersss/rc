@@ -40,12 +40,7 @@ class Router:
         }
 
         #Rotas para os vizinhos (Lembrar de olhar com calma a questão de redes com mais de uma porta)
-        for neighbor_adress, cost in self.neighbors.items():
-            self.routing_table[neighbor_adress] = {
-            'cost': cost, 
-            'next_hop': str(neighbor_adress)
-        }
-            
+        
         print("Tabela de roteamento inicial:")
         print(json.dumps(self.routing_table, indent=4))
 
@@ -88,33 +83,25 @@ class Router:
         while mudou:
             mudou = False
             
-            destinos = [tabela_para_enviar.keys()]            
+            destinos = list(tabela_para_enviar.keys())       
 
             for i in range(len(destinos)):
                 for j in range(i + 1, len(destinos)):
                     d1 = destinos[i]
                     d2 = destinos[j]
-
-                    if d1 not in tabela_para_enviar or d2 not in tabela_para_enviar:
-                        continue
-                    
-                    if ":" in d1 or ":" in d2: continue
                     
                     r1 = tabela_para_enviar[d1]
                     r2 = tabela_para_enviar[d2]
-
-                    # Condição principal: mesmo next_hop
+                    
                     if r1["next_hop"] != r2["next_hop"]: continue
-                                        
+
                     if can_aggregate(d1, d2):
                         agregada = aggregate(d1, d2)
                         novo_custo = max(r1["cost"], r2["cost"])
 
-                        # Remove específicas
                         del tabela_para_enviar[d1]
                         del tabela_para_enviar[d2]
 
-                        # Adiciona sumarizada
                         tabela_para_enviar[agregada] = {
                             "cost": novo_custo,
                             "next_hop": r1["next_hop"]
@@ -160,6 +147,7 @@ def can_aggregate(net1, net2):
 
     prefix1 = int(prefix1)
     prefix2 = int(prefix2)
+
 
     if prefix1 != prefix2: return False
 
