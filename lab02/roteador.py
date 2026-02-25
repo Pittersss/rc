@@ -39,11 +39,13 @@ class Router:
             'next_hop': str(self.my_network)
         }
 
-        #Rotas para os vizinhos
-        self.routing_table[self.my_network] = {
-        'cost': 0,
-        'next_hop': self.my_network
-}
+        #Rotas para os vizinhos (Lembrar de olhar com calma a questão de redes com mais de uma porta)
+        for neighbor_adress, cost in self.neighbors.items():
+            self.routing_table[neighbor_adress] = {
+            'cost': cost, 
+            'next_hop': str(neighbor_adress)
+        }
+            
         print("Tabela de roteamento inicial:")
         print(json.dumps(self.routing_table, indent=4))
 
@@ -85,7 +87,8 @@ class Router:
         mudou = True
         while mudou:
             mudou = False
-            destinos = list(tabela_para_enviar.keys())
+            
+            destinos = [tabela_para_enviar.keys()]            
 
             for i in range(len(destinos)):
                 for j in range(i + 1, len(destinos)):
@@ -94,7 +97,9 @@ class Router:
 
                     if d1 not in tabela_para_enviar or d2 not in tabela_para_enviar:
                         continue
-
+                    
+                    if ":" in d1 or ":" in d2: continue
+                    
                     r1 = tabela_para_enviar[d1]
                     r2 = tabela_para_enviar[d2]
 
@@ -126,10 +131,6 @@ class Router:
             "routing_table": tabela_para_enviar
         }
 
-        print("Minha tabela de roteamento\n")
-        print(tabela_para_enviar)
-        print("\n")
-
         for neighbor_address in self.neighbors:
             url = f'http://{neighbor_address}/receive_update'
             try:
@@ -137,8 +138,6 @@ class Router:
                 requests.post(url, json=payload, timeout=5)
             except requests.exceptions.RequestException as e:
                 print(f"Não foi possível conectar ao vizinho {neighbor_address}. Erro: {e}")
-
-
 
 def ip_to_int(ip):
     parts = ip.split(".")
@@ -259,6 +258,7 @@ def receive_update():
 
     return jsonify({"status": "success", "message": "Update received"}), 200
 
+
 if __name__ == '__main__':
     parser = ArgumentParser(description="Simulador de Roteador com Vetor de Distância")
     parser.add_argument('-p', '--port', type=int, default=5000, help="Porta para executar o roteador.")
@@ -272,6 +272,7 @@ if __name__ == '__main__':
     try:
         with open(args.file, mode='r') as infile:
             reader = csv.DictReader(infile)
+            print("Colunas detectadas:", reader.fieldnames)
             for row in reader:
                 neighbors_config[row['vizinho']] = int(row['custo'])
     except FileNotFoundError:
