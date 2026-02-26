@@ -103,12 +103,9 @@ router_instance = None
 @app.route('/routes', methods=['GET'])
 def get_routes():
     """Endpoint para visualizar a tabela de roteamento atual."""
-    # TODO: Aluno! Este endpoint está parcialmente implementado para ajudar na depuração.
-    # Você pode mantê-lo como está ou customizá-lo se desejar.
-    # - mantenha o routing_table como parte da resposta JSON.
+   
     if router_instance:
         return jsonify({
-            "message": "Não implementado!.",
             "vizinhos" : router_instance.neighbors,
             "my_network": router_instance.my_network,
             "my_address": router_instance.my_address,
