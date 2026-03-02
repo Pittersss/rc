@@ -15,7 +15,7 @@ class Router:
     Representa um roteador que executa o algoritmo de Vetor de Distância.
     """
 
-    def __init__(self, my_address, neighbors, my_network, update_interval=1):
+    def __init__(self, my_address, neighbors, my_network, update_interval=1, aggregating_not_adjacent=False, neighbor_X=None):
         """
         Inicializa o roteador.
 
@@ -30,8 +30,9 @@ class Router:
         self.neighbors = neighbors
         self.my_network = my_network
         self.update_interval = update_interval
-
+        self.aggregating_not_adjacent = aggregating_not_adjacent
         self.routing_table = {}
+        self.neighbor_X = neighbor_X
 
         #Rota para rede que este roteador administra
         self.routing_table[self.my_network] = {
@@ -59,9 +60,31 @@ class Router:
             time.sleep(self.update_interval)
             print(f"[{time.ctime()}] Enviando atualizações periódicas para os vizinhos...")
             try:
-                self.send_updates_to_neighbors()
+                if self.aggregating_not_adjacent:
+                    print("ENTREI NA OPÇÃO NÃO PADRÃO")
+                    self.send_updates_to_neighbor_aggregating_not_adjacent()                    
+                else:
+                    self.send_updates_to_neighbors()
             except Exception as e:
                 print(f"Erro durante a atualização periódida: {e}")
+        
+    def send_updates_to_neighbor_aggregating_not_adjacent(self):
+        tabela_para_enviar = copy.deepcopy(self.routing_table)
+        tabela_para_enviar = sumariza_redes_nao_contiguas(self.routing_table)
+
+        payload = {
+            "sender_address": self.my_address,
+            "routing_table": tabela_para_enviar
+        }
+
+        if self.neighbor_X in self.neighbors:
+            url = f'http://{self.neighbor_X}/receive_update'
+            try:
+                print(f"Enviando tabela para {self.neighbor_X}")
+                requests.post(url, json=payload, timeout=5)
+            except requests.exceptions.RequestException as e:
+                print(f"Não foi possível conectar ao vizinho {self.neighbor_X}. Erro: {e}")
+    
 
     def send_updates_to_neighbors(self):
         """
@@ -112,7 +135,28 @@ class Router:
                 if mudou:
                     break
 
-                        
+
+        destinos = list(tabela_para_enviar.keys())       
+        for i in range(len(destinos)-1):
+            for j in range(i+1, len(destinos)):
+                
+                d1 = destinos[i]
+                d2 = destinos[j]  
+                r1 = tabela_para_enviar[d1]
+                r2 = tabela_para_enviar[d2]
+                next_hop1 = r1["next_hop"]
+                next_hop2 = r2["next_hop"]
+
+                ip1, prefix1 = d1.split("/")
+                ip2, prefix2 = d2.split("/")
+
+                if ip1 == ip2 and next_hop1 == next_hop2:
+                    if prefix1 < prefix2:
+                        del tabela_para_enviar[d2]
+                    else:
+                        del tabela_para_enviar[d1]
+
+
         payload = {
             "sender_address": self.my_address,
             "routing_table": tabela_para_enviar
@@ -125,6 +169,102 @@ class Router:
                 requests.post(url, json=payload, timeout=5)
             except requests.exceptions.RequestException as e:
                 print(f"Não foi possível conectar ao vizinho {neighbor_address}. Erro: {e}")
+
+def sumariza_redes_nao_contiguas(routing_table):
+
+    new_table = copy.deepcopy(routing_table)
+    groups = {}
+    direct_nets = []
+
+    for network, data in routing_table.items():
+
+        if data["cost"] == 0:
+            direct_nets.append(network)
+            continue
+
+        next_hop = data["next_hop"]
+
+        groups.setdefault(next_hop, []).append(network)
+    
+    for next_hop, nets in groups.items():
+
+        for i in range(len(direct_nets)+1):
+
+            if i == len(direct_nets):
+                direct_net = []
+            else:
+                direct_net = [direct_nets[i]]
+
+            networks = nets + direct_net
+            if len(networks) < 2:
+                continue 
+
+            min_ip = None
+            max_ip = None
+            max_cost = 0
+
+            for net in networks:
+                base, broadcast = network_to_range(net)
+
+                if min_ip is None or base < min_ip:
+                    min_ip = base
+
+                if max_ip is None or broadcast > max_ip:
+                    max_ip = broadcast
+
+                max_cost = max(max_cost, routing_table[net]["cost"])
+
+            prefix = calculate_common_prefix(min_ip, max_ip)
+            
+            original_prefix = int(networks[0].split("/")[1])
+            num_slots = 2 ** (original_prefix - prefix)
+
+            if prefix < 8 or len(networks) != num_slots:
+                continue
+
+            mask = (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
+            aggregated_base = min_ip & mask
+
+            aggregated_network = f"{int_to_ip(aggregated_base)}/{prefix}"
+
+            for net in networks:
+                new_table.pop(net, None)
+            
+            if direct_net != []:
+                direct_nets.remove(direct_net[0])
+
+            new_table[aggregated_network] = {
+                "cost": max_cost,
+                "next_hop": next_hop
+            }
+
+            break
+
+    return new_table
+    
+
+def network_to_range(network):
+    ip, prefix = network.split("/")
+    prefix = int(prefix)
+
+    ip_int = ip_to_int(ip)
+    mask = (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF
+
+    network_base = ip_int & mask
+    broadcast = network_base | (~mask & 0xFFFFFFFF)
+
+    return network_base, broadcast
+
+
+def calculate_common_prefix(min_ip, max_ip):
+    diff = min_ip ^ max_ip
+
+    if diff == 0:
+        return 32
+
+    bits_needed = diff.bit_length()
+    prefix = 32 - bits_needed
+    return prefix
 
 def ip_to_int(ip):
     parts = ip.split(".")
@@ -179,6 +319,7 @@ def aggregate(net1, net2):
 
     return f"{super_ip}/{super_prefix}"
 
+    
 # --- API Endpoints ---
 # Instância do Flask e do Roteador (serão inicializadas no main)
 app = Flask(__name__)
@@ -253,6 +394,9 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--file', type=str, required=True, help="Arquivo CSV de configuração de vizinhos.")
     parser.add_argument('--network', type=str, required=True, help="Rede administrada por este roteador (ex: 10.0.1.0/24).")
     parser.add_argument('--interval', type=int, default=10, help="Intervalo de atualização periódica em segundos.")
+    parser.add_argument('--aggregate',  action='store_true', help='Ativa a sumarização de rotas não adjacentes.')
+    parser.add_argument('--neighbor_X',type=str, help='Ativa o envio de tabela sumarizada para apenas um roteador X.'
+)
     args = parser.parse_args()
 
     # Leitura do arquivo de configuração de vizinhos
@@ -282,7 +426,9 @@ if __name__ == '__main__':
         my_address=my_full_address,
         neighbors=neighbors_config,
         my_network=args.network,
-        update_interval=args.interval
+        update_interval=args.interval,
+        aggregating_not_adjacent= args.aggregate,
+        neighbor_X=args.neighbor_X
     )
 
     # Inicia o servidor Flask
